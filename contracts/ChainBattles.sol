@@ -48,4 +48,45 @@ contract ChainBattles is ERC721URIStorage{
         return levels.toString()
     }
 
+    //Allows opensea to know what we are miniting
+    function getTokenURI(uint256 tokenId) public returns (string memory){
+    bytes memory dataURI = abi.encodePacked(
+        '{',
+            '"name": "Chain Battles #', tokenId.toString(), '",',
+            '"description": "Battles on chain",',
+            '"image": "', generateCharacter(tokenId), '"',
+        '}'
+    );
+    return string(
+        abi.encodePacked(
+            "data:application/json;base64,",
+            Base64.encode(dataURI)
+        )
+    );
+
+    function mint() public{
+        s_tokenIds.increment();
+        uint256 newItemId = s_tokenIds.current();
+        _safemint(msg.sender, newItemId);
+        tokenIdtoLevels[newItemId] = 0
+        //Provided by ERC721 standard
+        _setTokenURI(newItemId, getTokenURI(newItemId))
+    }
+
+    //dynamic stuff that will change the nft we are interacting with
+    function train(uint256 tokenId) public {
+        //Check that the token id exists
+        require(_exists(tokenId), "Please use an existing Token");
+        //Only the person who owns the token should be able to train the nft
+        require(ownerOf(tokenId) == msg.sender, "You must own this token to train it")  
+
+        uint256 currentLevel = tokenIdtoLevels[tokenId];
+        tokenIdtoLevels[tokenId] = currentWins + 1;
+        //will generate a new token uri after levels increases
+        _setTokenURI(tokenId, getTokenURI(tokenId));
+
+    }
+
 }
+
+//Big idea use abi.ecode to save a svg image text as bytes and store it on contract. Then when the nft is displayed it will display the svg item
